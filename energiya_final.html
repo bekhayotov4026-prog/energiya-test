@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Energiya Pro Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b12;
+  --s1:#0d1220;
+  --s2:#111827;
+  --accent:#e8f4ff;
+  --blue:#3b82f6;
+  --cyan:#06b6d4;
+  --green:#22c55e;
+  --red:#ef4444;
+  --gold:#f59e0b;
+  --purple:#a855f7;
+  --dim:#334155;
+  --muted:#64748b;
+  --text:#f1f5f9;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow-x:hidden;}
+body{
+  font-family:'Syne',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+}
+
+/* ── CANVAS ── */
+#fx{position:fixed;inset:0;z-index:999;pointer-events:none;}
+
+/* ── BG GRID ── */
+body::before{
+  content:'';
+  position:fixed;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(59,130,246,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(59,130,246,0.04) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;
+}
+body::after{
+  content:'';
+  position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(59,130,246,0.06),transparent);
+  pointer-events:none;
+}
+
+/* ── LAYOUT ── */
+.page{position:relative;z-index:10;max-width:800px;margin:0 auto;padding:20px 16px 60px;}
+
+/* ── HEADER ── */
+.hdr{text-align:center;padding:44px 0 32px;}
+.hdr-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid rgba(59,130,246,0.25);
+  background:rgba(59,130,246,0.06);
+  border-radius:100px;padding:5px 18px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:3px;color:var(--blue);
+  text-transform:uppercase;margin-bottom:22px;
+}
+.hdr-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:p 1.6s infinite;}
+@keyframes p{0%,100%{opacity:1;}50%{opacity:.2;}}
+.hdr h1{
+  font-size:clamp(32px,7vw,58px);
+  font-weight:800;letter-spacing:-2px;line-height:1;
+  color:var(--text);margin-bottom:10px;
+}
+.hdr h1 span{
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hdr p{color:var(--muted);font-size:13px;letter-spacing:.5px;}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.sb{
+  background:var(--s1);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px;padding:12px 8px;text-align:center;
+  transition:border-color .3s;
+}
+.sb:hover{border-color:rgba(59,130,246,0.2);}
+.sv{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--blue);display:block;}
+.sl{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+
+/* ── PROGRESS ── */
+.prog{height:2px;background:rgba(255,255,255,0.05);margin-bottom:20px;position:relative;overflow:visible;}
+.prog-f{
+  height:100%;
+  background:linear-gradient(90deg,var(--blue),var(--cyan));
+  transition:width .6s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.prog-f::after{
+  content:'';position:absolute;right:-4px;top:-4px;
+  width:10px;height:10px;border-radius:50%;
+  background:var(--cyan);
+  box-shadow:0 0 10px var(--cyan),0 0 20px rgba(6,182,212,.4);
+}
+
+/* ── TIMER ── */
+.timer-row{display:flex;justify-content:center;margin-bottom:18px;}
+.timer{
+  font-family:'JetBrains Mono',monospace;
+  font-size:28px;font-weight:700;letter-spacing:8px;
+  color:var(--cyan);
+  background:var(--s1);
+  border:1px solid rgba(6,182,212,.15);
+  border-radius:12px;padding:10px 30px;
+  position:relative;overflow:hidden;
+  transition:all .3s;
+}
+.timer::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(6,182,212,.04),transparent);}
+.timer.warn{color:var(--gold);border-color:rgba(245,158,11,.25);}
+.timer.danger{color:var(--red);border-color:rgba(239,68,68,.3);animation:ts .2s infinite;}
+@keyframes ts{0%,100%{transform:translateX(0);}50%{transform:translateX(-2px);}}
+
+/* ── QUESTION CARD ── */
+.qcard{
+  background:var(--s1);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:20px;padding:28px;
+  position:relative;overflow:hidden;
+  animation:ci .4s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes ci{
+  from{opacity:0;transform:perspective(900px) rotateX(-8deg) translateY(24px) scale(.97);}
+  to{opacity:1;transform:perspective(900px) rotateX(0) translateY(0) scale(1);}
+}
+/* Top gradient line */
+.qcard::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--blue),var(--cyan),transparent);
+}
+/* Subtle corner glow */
+.qcard::after{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,rgba(59,130,246,.06),transparent 70%);
+  pointer-events:none;
+}
+
+.qmeta{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.qnum{
+  font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;
+  color:var(--blue);background:rgba(59,130,246,.08);
+  border:1px solid rgba(59,130,246,.18);padding:4px 14px;border-radius:100px;
+}
+.qcat{
+  font-size:10px;color:var(--muted);
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);
+  padding:4px 12px;border-radius:100px;
+}
+.qtxt{
+  font-size:17px;font-weight:700;line-height:1.7;
+  color:var(--text);margin-bottom:24px;
+}
+
+/* ── OPTIONS ── */
+.opts{display:grid;gap:9px;}
+.opt{
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:12px;padding:14px 18px;
+  display:flex;align-items:center;gap:14px;
+  cursor:pointer;
+  transition:all .18s cubic-bezier(.4,0,.2,1);
+  position:relative;overflow:hidden;
+}
+.opt::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;
+  width:3px;background:var(--blue);
+  transform:scaleY(0);transform-origin:center;
+  transition:transform .2s;border-radius:0 2px 2px 0;
+}
+.opt:hover:not(.dis)::before{transform:scaleY(1);}
+.opt:hover:not(.dis){
+  background:rgba(59,130,246,.06);
+  border-color:rgba(59,130,246,.2);
+  transform:translateX(6px);
+}
+.okey{
+  width:34px;height:34px;border-radius:9px;flex-shrink:0;
+  background:rgba(59,130,246,.08);
+  border:1px solid rgba(59,130,246,.15);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;
+  color:var(--blue);transition:all .18s;position:relative;z-index:1;
+}
+.otxt{font-size:14px;font-weight:600;line-height:1.45;position:relative;z-index:1;flex:1;}
+
+/* States */
+.opt.correct{
+  border-color:rgba(34,197,94,.35);
+  background:rgba(34,197,94,.06);
+  animation:cp .5s cubic-bezier(.175,.885,.32,1.275);
+}
+.opt.correct .okey{background:var(--green);color:#000;border-color:var(--green);box-shadow:0 0 16px rgba(34,197,94,.4);}
+.opt.correct::before{background:var(--green);transform:scaleY(1);}
+@keyframes cp{
+  0%{transform:translateX(0) scale(1);}
+  30%{transform:translateX(8px) scale(1.02);}
+  60%{transform:translateX(-2px) scale(.99);}
+  100%{transform:translateX(0) scale(1);}
+}
+.opt.wrong{
+  border-color:rgba(239,68,68,.35);
+  background:rgba(239,68,68,.06);
+  animation:wp .45s ease;
+}
+.opt.wrong .okey{background:var(--red);color:#fff;border-color:var(--red);box-shadow:0 0 16px rgba(239,68,68,.4);}
+.opt.wrong::before{background:var(--red);transform:scaleY(1);}
+@keyframes wp{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-10px);}
+  50%{transform:translateX(8px);}
+  80%{transform:translateX(-4px);}
+}
+.opt.showok{border-color:rgba(34,197,94,.25);background:rgba(34,197,94,.04);}
+.opt.showok .okey{background:var(--green);color:#000;}
+.opt.showok::before{background:var(--green);transform:scaleY(1);}
+.opt.dis{cursor:default;pointer-events:none;}
+
+/* ── FEEDBACK ── */
+.fb{
+  display:none;margin-top:14px;padding:14px 18px;
+  border-radius:12px;animation:fbi .28s ease;
+}
+@keyframes fbi{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+.fb.ok{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.18);}
+.fb.err{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.18);}
+.fbt{font-size:13px;font-weight:700;margin-bottom:5px;}
+.fbb{font-size:12px;color:var(--muted);line-height:1.65;}
+
+/* ── NEXT ── */
+.btn-next{
+  display:none;width:100%;margin-top:14px;padding:14px;
+  background:linear-gradient(135deg,var(--blue),#1d4ed8);
+  color:#fff;border:none;border-radius:12px;
+  font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;
+  transition:all .22s;
+  box-shadow:0 0 0 1px rgba(59,130,246,.3),0 8px 32px rgba(59,130,246,.2);
+}
+.btn-next:hover{transform:translateY(-2px);box-shadow:0 0 0 1px rgba(59,130,246,.5),0 12px 40px rgba(59,130,246,.35);}
+
+/* ── START ── */
+.start{text-align:center;padding:0 0 20px;}
+.feats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:28px 0;}
+.feat{
+  background:var(--s1);border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;padding:18px;text-align:left;
+  transition:all .22s;
+}
+.feat:hover{border-color:rgba(59,130,246,.2);transform:translateY(-2px);}
+.fi{font-size:24px;margin-bottom:10px;}
+.ft{font-weight:700;font-size:13px;color:var(--blue);margin-bottom:4px;}
+.fd{font-size:12px;color:var(--muted);line-height:1.5;}
+.btn-start{
+  padding:16px 56px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  color:#fff;border:none;border-radius:14px;
+  font-family:'Syne',sans-serif;font-size:15px;font-weight:800;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;
+  transition:all .28s;
+  box-shadow:0 0 0 1px rgba(59,130,246,.4),0 16px 48px rgba(59,130,246,.25);
+}
+.btn-start:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 0 0 1px rgba(59,130,246,.6),0 20px 60px rgba(59,130,246,.4);}
+
+/* ── RESULTS ── */
+.results{display:none;animation:fbi .5s ease;}
+.res-hero{
+  background:var(--s1);border:1px solid rgba(255,255,255,.07);
+  border-radius:20px;padding:48px 24px 40px;text-align:center;margin-bottom:14px;
+  position:relative;overflow:hidden;
+}
+.res-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--green),var(--cyan),transparent);}
+.ring{width:160px;height:160px;margin:0 auto 24px;position:relative;display:flex;align-items:center;justify-content:center;}
+.ring svg{position:absolute;inset:0;transform:rotate(-90deg);}
+.ri{position:relative;z-index:1;text-align:center;}
+.rpct{font-family:'JetBrains Mono',monospace;font-size:38px;font-weight:700;display:block;line-height:1;}
+.rlbl{font-size:10px;color:var(--muted);letter-spacing:3px;margin-top:4px;}
+.rtit{font-size:24px;font-weight:800;margin-bottom:6px;}
+.rsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.rstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:420px;margin:0 auto;}
+.rs{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;}
+.rsv{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;display:block;}
+.rsl{font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:3px;}
+
+.sec{background:var(--s1);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px;margin-bottom:12px;}
+.sech{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--blue);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.sech::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.06);}
+
+.cr{margin-bottom:12px;}
+.ct{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;}
+.cb{height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;}
+.cf{height:100%;border-radius:3px;transition:width 1.2s ease;}
+
+.wcard{background:rgba(239,68,68,.03);border:1px solid rgba(239,68,68,.12);border-radius:12px;padding:14px;margin-bottom:10px;}
+.wq{font-size:12px;font-weight:700;margin-bottom:10px;line-height:1.6;}
+.wch{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:9px;}
+.wc{padding:8px 11px;border-radius:8px;font-size:11px;font-weight:600;line-height:1.4;}
+.wc.b{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:var(--red);}
+.wc.g{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);color:var(--green);}
+.cl{font-size:9px;opacity:.55;display:block;margin-bottom:2px;}
+.we{background:rgba(59,130,246,.05);border-left:2px solid var(--blue);padding:9px 12px;border-radius:0 7px 7px 0;font-size:11px;color:var(--muted);line-height:1.6;}
+
+/* Review */
+.review{display:none;animation:fbi .5s ease;}
+.rfilt{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.rfb{padding:5px 13px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--muted);border-radius:100px;cursor:pointer;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;transition:all .18s;}
+.rfb:hover,.rfb.act{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--red);}
+
+.revs{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px;}
+.rsc{background:var(--s1);border:1px solid;border-radius:11px;padding:14px;text-align:center;}
+.rsval{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;display:block;}
+.rslb{font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:3px;}
+
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px;}
+.bo{padding:14px;background:transparent;border:1px solid rgba(59,130,246,.35);color:var(--blue);border-radius:11px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .22s;text-transform:uppercase;}
+.bo:hover{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.6);transform:translateY(-2px);}
+.br{padding:14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:11px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all .22s;text-transform:uppercase;}
+.br:hover{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.5);transform:translateY(-2px);}
+
+@media(max-width:560px){
+  .stats{grid-template-columns:repeat(2,1fr);}
+  .feats{grid-template-columns:1fr;}
+  .wch,.btns,.revs{grid-template-columns:1fr;}
+  .rstats{grid-template-columns:repeat(3,1fr);}
+  .qcard,.sec{padding:18px;}
+  .qtxt{font-size:15px;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="fx"></canvas>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-tag"><span class="hdr-dot"></span>PRO TEST TIZIMI</div>
+    <h1>ENERGIYA<br><span>TEJAMKORLIK</span></h1>
+    <p>ҚМҚ · ШНҚ · Prezident Farmonlari · 64 savol</p>
+  </div>
+
+  <!-- START -->
+  <div class="start" id="startScreen">
+    <div class="feats">
+      <div class="feat"><div class="fi">⚡</div><div class="ft">3D Karta Animatsiya</div><div class="fd">Har savol perspective 3D effekt bilan chiqadi</div></div>
+      <div class="feat"><div class="fi">🎆</div><div class="ft">Ekran Atrofi Salyut</div><div class="fd">To'g'ri javobda professional ekran salyuti</div></div>
+      <div class="feat"><div class="fi">🔬</div><div class="ft">Xato Tahlil Markazi</div><div class="fd">Zaif mavzularni aniqlab mustahkamlang</div></div>
+      <div class="feat"><div class="fi">📊</div><div class="ft">Batafsil Statistika</div><div class="fd">Har mavzu bo'yicha natijangiz grafik bilan</div></div>
+    </div>
+    <p style="color:var(--muted);margin-bottom:8px;"><strong style="color:var(--text)">64 ta savol</strong> · 10 mavzu · Har safar aralashtiriladi</p>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:32px;">Har bir savol uchun 45 soniya vaqt</p>
+    <button class="btn-start" onclick="startQuiz()">▶ TESTNI BOSHLASH</button>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quizArea" style="display:none;">
+    <div class="timer-row"><div class="timer" id="timerEl">00:45</div></div>
+    <div class="stats">
+      <div class="sb"><span class="sv" id="sN">1</span><span class="sl">Savol</span></div>
+      <div class="sb"><span class="sv" id="sO" style="color:var(--green)">0</span><span class="sl">To'g'ri</span></div>
+      <div class="sb"><span class="sv" id="sE" style="color:var(--red)">0</span><span class="sl">Xato</span></div>
+      <div class="sb"><span class="sv" id="sL">64</span><span class="sl">Qoldi</span></div>
+    </div>
+    <div class="prog"><div class="prog-f" id="pf" style="width:0%"></div></div>
+    <div class="qcard" id="qcard">
+      <div class="qmeta"><span class="qnum" id="qN">SAVOL 01</span><span class="qcat" id="qC"></span></div>
+      <div class="qtxt" id="qT"></div>
+      <div class="opts" id="ow"></div>
+      <div class="fb" id="fb"><div class="fbt" id="ft"></div><div class="fbb" id="fb2"></div></div>
+      <button class="btn-next" id="bn" onclick="nextQ()">KEYINGI →</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="results">
+    <div class="res-hero">
+      <div class="ring">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="68" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="10"/>
+          <circle cx="80" cy="80" r="68" fill="none" stroke="url(#rg)" stroke-width="10"
+            stroke-linecap="round" stroke-dasharray="427" id="arc" stroke-dashoffset="427"/>
+          <defs><linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#22c55e"/>
+            <stop offset="100%" stop-color="#06b6d4"/>
+          </linearGradient></defs>
+        </svg>
+        <div class="ri"><span class="rpct" id="rP">0%</span><span class="rlbl" id="rG">BALL</span></div>
+      </div>
+      <div class="rtit" id="rT"></div>
+      <div class="rsub" id="rS"></div>
+      <div class="rstats">
+        <div class="rs"><span class="rsv" id="rO" style="color:var(--green)">0</span><div class="rsl">To'g'ri</div></div>
+        <div class="rs"><span class="rsv" id="rE" style="color:var(--red)">0</span><div class="rsl">Xato</div></div>
+        <div class="rs"><span class="rsv" id="rTm" style="color:var(--gold)">0s</span><div class="rsl">Vaqt</div></div>
+      </div>
+    </div>
+    <div class="sec"><div class="sech">📊 MAVZULAR BO'YICHA</div><div id="ca"></div></div>
+    <div class="sec" id="ws" style="display:none;"><div class="sech">❌ XATO SAVOLLAR</div><div id="wl"></div></div>
+    <div class="btns">
+      <button class="bo" onclick="restartQuiz()">🔄 QAYTA BOSHLASH</button>
+      <button class="br" id="brv" onclick="showReview()" style="display:none;">🔬 XATO TAHLIL</button>
+    </div>
+  </div>
+
+  <!-- REVIEW -->
+  <div class="review" id="reviewPage">
+    <div class="sec" style="position:relative;overflow:hidden;margin-bottom:12px;">
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--red),var(--gold),transparent);"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--red);">🔬 XATO TAHLIL MARKAZI</div>
+          <div style="color:var(--muted);font-size:11px;margin-top:3px;">Zaif tomonlarni aniqlang va mustahkamlang</div>
+        </div>
+        <button onclick="hideReview()" style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);color:var(--blue);padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;transition:all .2s;" onmouseover="this.style.background='rgba(59,130,246,.14)'" onmouseout="this.style.background='rgba(59,130,246,.07)'">← Natijaga qaytish</button>
+      </div>
+    </div>
+    <div class="revs" id="rsum"></div>
+    <div class="sec"><div class="sech">⚠️ ZAIF MAVZULAR</div><div id="rcat"></div></div>
+    <div class="sec"><div class="sech">📋 BATAFSIL XATO TAHLIL</div><div class="rfilt" id="rflt"></div><div id="rl"></div></div>
+    <div class="btns">
+      <button class="bo" onclick="restartQuiz()">🔄 QAYTA BOSHLASH</button>
+      <button onclick="hideReview()" class="br">← NATIJAGA QAYTISH</button>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   PROFESSIONAL EDGE FIREWORKS SYSTEM
+   — rockets launch from all 4 edges
+   — burst in air with 3D trails
+   ═══════════════════════════════════════════════ */
+const fx = document.getElementById('fx');
+const fc = fx.getContext('2d');
+fx.width = window.innerWidth;
+fx.height = window.innerHeight;
+window.addEventListener('resize', () => { fx.width = window.innerWidth; fx.height = window.innerHeight; });
+
+const PALETTES = [
+  ['#3b82f6','#06b6d4','#818cf8','#ffffff'],
+  ['#22c55e','#4ade80','#86efac','#ffffff'],
+  ['#f59e0b','#fb923c','#fbbf24','#ffffff'],
+  ['#a855f7','#c084fc','#e879f9','#ffffff'],
+  ['#ef4444','#f97316','#fbbf24','#ffffff'],
+  ['#06b6d4','#22c55e','#3b82f6','#ffffff'],
+];
+
+class Rocket {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    // Launch from random edge
+    const edge = Math.floor(Math.random() * 4);
+    const W = fx.width, H = fx.height;
+    if (edge === 0) { this.x = Math.random() * W; this.y = H; } // bottom
+    else if (edge === 1) { this.x = 0; this.y = Math.random() * H; } // left
+    else if (edge === 2) { this.x = W; this.y = Math.random() * H; } // right
+    else { this.x = Math.random() * W; this.y = 0; } // top
+
+    // Target: center-ish area
+    this.tx = W * 0.2 + Math.random() * W * 0.6;
+    this.ty = H * 0.1 + Math.random() * H * 0.5;
+    const dist = Math.hypot(this.tx - this.x, this.ty - this.y);
+    const speed = 8 + Math.random() * 6;
+    this.vx = (this.tx - this.x) / dist * speed;
+    this.vy = (this.ty - this.y) / dist * speed;
+    this.trail = [];
+    this.exploded = false;
+    this.palette = PALETTES[Math.floor(Math.random() * PALETTES.length)];
+    this.particles = [];
+    this.done = false;
+    this.life = 1;
+  }
+  update() {
+    if (!this.exploded) {
+      this.trail.push({ x: this.x, y: this.y });
+      if (this.trail.length > 12) this.trail.shift();
+      this.x += this.vx;
+      this.y += this.vy;
+      const dx = this.tx - this.x, dy = this.ty - this.y;
+      if (Math.hypot(dx, dy) < 12) this.explode();
+    } else {
+      this.particles = this.particles.filter(p => p.life > 0);
+      this.particles.forEach(p => p.update());
+      if (this.particles.length === 0) this.done = true;
+    }
+  }
+  explode() {
+    this.exploded = true;
+    const count = 80 + Math.floor(Math.random() * 60);
+    for (let i = 0; i < count; i++) {
+      this.particles.push(new Burst(this.x, this.y, this.palette));
+    }
+    // Ring effect
+    for (let i = 0; i < 24; i++) {
+      const angle = (i / 24) * Math.PI * 2;
+      this.particles.push(new RingParticle(this.x, this.y, angle, this.palette));
+    }
+  }
+  draw(ctx) {
+    if (!this.exploded) {
+      // Trail
+      for (let i = 0; i < this.trail.length; i++) {
+        const t = this.trail[i];
+        const a = (i / this.trail.length) * 0.8;
+        const r = (i / this.trail.length) * 2.5;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200,220,255,${a})`;
+        ctx.fill();
+      }
+      // Head
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#ffffff';
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    } else {
+      this.particles.forEach(p => p.draw(ctx));
+    }
+  }
+}
+
+class Burst {
+  constructor(x, y, palette) {
+    this.x = x; this.y = y;
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 7 + 2;
+    this.vx = Math.cos(angle) * speed * (0.5 + Math.random() * 0.5);
+    this.vy = Math.sin(angle) * speed * (0.5 + Math.random() * 0.5);
+    this.life = 1;
+    this.decay = 0.015 + Math.random() * 0.025;
+    this.size = Math.random() * 3 + 1;
+    this.color = palette[Math.floor(Math.random() * palette.length)];
+    this.gravity = 0.08 + Math.random() * 0.06;
+    this.trail = [];
+    this.twinkle = Math.random() > 0.6;
+  }
+  update() {
+    this.trail.push({ x: this.x, y: this.y });
+    if (this.trail.length > 6) this.trail.shift();
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vy += this.gravity;
+    this.vx *= 0.97;
+    this.vy *= 0.97;
+    this.life -= this.decay;
+    this.size *= 0.988;
+  }
+  draw(ctx) {
+    if (this.life <= 0) return;
+    // Trail
+    for (let i = 0; i < this.trail.length; i++) {
+      const t = this.trail[i];
+      const a = (i / this.trail.length) * this.life * 0.5;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, this.size * (i / this.trail.length) * 0.5, 0, Math.PI * 2);
+      ctx.fillStyle = `${this.color}${Math.floor(a * 255).toString(16).padStart(2,'0')}`;
+      ctx.fill();
+    }
+    // Glow
+    const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 3);
+    grd.addColorStop(0, this.color + Math.floor(this.life * 180).toString(16).padStart(2,'0'));
+    grd.addColorStop(1, this.color + '00');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+    ctx.fill();
+    // Core
+    ctx.globalAlpha = this.life;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+class RingParticle {
+  constructor(x, y, angle, palette) {
+    this.x = x; this.y = y;
+    const speed = 5 + Math.random() * 3;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.life = 1;
+    this.decay = 0.03;
+    this.size = 1.5;
+    this.color = '#ffffff';
+    this.gravity = 0.05;
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    this.vy += this.gravity;
+    this.vx *= 0.95; this.vy *= 0.95;
+    this.life -= this.decay;
+  }
+  draw(ctx) {
+    if (this.life <= 0) return;
+    ctx.globalAlpha = this.life;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+let rockets = [];
+let fxRunning = false;
+
+function launchFireworks(count = 6) {
+  fxRunning = true;
+  // Stagger launches from edges
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      rockets.push(new Rocket());
+    }, i * 140);
+  }
+}
+
+(function animFx() {
+  fc.clearRect(0, 0, fx.width, fx.height);
+  rockets = rockets.filter(r => !r.done);
+  rockets.forEach(r => { r.update(); r.draw(fc); });
+  requestAnimationFrame(animFx);
+})();
+
+/* ═══════════════════════════════════════════════
+   SOUND
+   ═══════════════════════════════════════════════ */
+let aC;
+function getAC() { if (!aC) aC = new (window.AudioContext || window.webkitAudioContext)(); return aC; }
+function tone(f, t, d, v = 0.12) {
+  try {
+    const ac = getAC(), o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type = t; o.frequency.value = f;
+    g.gain.setValueAtTime(v, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d);
+    o.start(); o.stop(ac.currentTime + d);
+  } catch(e) {}
+}
+function sOk() {
+  tone(523,'sine',.1,.07);
+  setTimeout(()=>tone(659,'sine',.1,.08),70);
+  setTimeout(()=>tone(784,'sine',.15,.09),140);
+  setTimeout(()=>tone(1047,'sine',.22,.08),210);
+}
+function sErr() { tone(160,'sawtooth',.07,.09); setTimeout(()=>tone(130,'sawtooth',.14,.08),65); }
+function sTick() { tone(1400,'sine',.04,.025); }
+
+/* ═══════════════════════════════════════════════
+   QUESTIONS
+   ═══════════════════════════════════════════════ */
+const ALL_Q = [
+  {cat:"ҚМҚ & ШНҚ Normativlar",q:"Loyiha hujjatlarining energiya tejamkorlik echimlari qaysi ҚМҚ lar asosida ishlab chiqiladi?",opts:["ҚМҚ 2.01.04-18 va ҚМҚ 2.01.01-22","ҚМҚ 2.01.18-18 va ҚМҚ 2.01.01-22","ҚМҚ 2.01.18-18 va ҚМҚ 2.01.05-19","ҚМҚ 2.01.05-19 va ҚМҚ 2.01.01-22"],ans:0,exp:"Loyiha hujjatlari ҚМҚ 2.01.04-18 (Qurilish issiqlik texnikasi) va ҚМҚ 2.01.01-22 asosida ishlab chiqiladi."},
+  {cat:"ҚМҚ & ШНҚ Normativlar",q:"'Binolar va inshootlar isitish, shamollatish va kondisiyalashtirish uchun energiya sarfi me'yorlari' qaysi ҚМҚ ga belgilangan?",opts:["ҚМҚ 2.01.01-22","ҚМҚ 2.01.18-18","ҚМҚ 2.01.05-19","ҚМҚ 2.01.04-18"],ans:1,exp:"Isitish, shamollatish va kondisiyalashtirish uchun energiya sarfi me'yorlari ҚМҚ 2.01.18-18 da belgilangan."},
+  {cat:"ҚМҚ & ШНҚ Normativlar",q:"'Loyihalash uchun iqlimiy va fizikaviy-geologik ma'lumotlar' qaysi ҚМҚ da belgilangan?",opts:["ҚМҚ 2.01.05-19","ҚМҚ 2.01.18-18","ҚМҚ 2.01.01-22","ҚМҚ 2.01.04-18"],ans:2,exp:"Loyihalash uchun iqlimiy va fizikaviy-geologik ma'lumotlar ҚМҚ 2.01.01-22 da belgilangan."},
+  {cat:"ҚМҚ & ШНҚ Normativlar",q:"'Tabiiy va sun'iy yoritish' qaysi ҚМҚ da belgilangan?",opts:["ҚМҚ 2.01.05-19","ҚМҚ 2.01.18-18","ҚМҚ 2.01.01-22","ҚМҚ 2.01.04-18"],ans:0,exp:"'Tabiiy va sun'iy yoritish' — ҚМҚ 2.01.05-19 da belgilangan."},
+  {cat:"ҚМҚ & ШНҚ Normativlar",q:"ҚМҚ 2.01.04-18 qanday normativ hujjat?",opts:["Ventilatsiya me'yorlari","Qurilish issiqlik texnikasi","Seysmik himoya","Yoritish normalari"],ans:1,exp:"ҚМҚ 2.01.04-18 — 'Qurilish issiqlik texnikasi' normativ hujjati."},
+  {cat:"ҚМҚ & ШНҚ Normativlar",q:"ШНҚ 2.01.01-22 qanday nomlanadi?",opts:["Bino energiya samaradorligi","Loyihalash uchun iqlimiy va fizikaviy-geologik ma'lumotlar","Isitish va shamollatish me'yorlari","Yashil qurilish standarti"],ans:1,exp:"ШНҚ 2.01.01-22 — 'Loyihalash uchun iqlimiy va fizikaviy-geologik ma'lumotlar'."},
+  {cat:"ҚМҚ & ШНҚ Normativlar",q:"ШНҚ 2.01.18-24 qanday normativ hujjat?",opts:["Qurilish issiqlik texnikasi","Bino yoritish me'yorlari","Binolar va inshootlarni isitish, shamollatish va kondisiyalashtirish uchun energiya sarfi me'yorlari","Seysmik himoya"],ans:2,exp:"ШНҚ 2.01.18-24 — Binolar va inshootlarni isitish, shamollatish va kondisiyalashtirish uchun energiya sarfi me'yorlari."},
+  {cat:"ҚМҚ & ШНҚ Normativlar",q:"Qaysi normativ hujjat to'suvchi konstruksiyalar issiqlik texnikasi jihatdan loyihalash talablarini belgilaydi?",opts:["ШНҚ 2.01.18-24","ҚМҚ 2.01.04-18","ШНҚ 2.01.01-22","ҚМҚ 2.01.01-22"],ans:1,exp:"ҚМҚ 2.01.04-18 — Qurilish issiqlik texnikasi, to'suvchi konstruksiyalar loyihalash talablarini belgilaydi."},
+  {cat:"ҚМҚ & ШНҚ Normativlar",q:"Qaysi normativ hujjat isitish, ventilatsiya va havoni kondisiyalash jihatdan loyihalash talablarini belgilaydi?",opts:["ҚМҚ 2.01.04-18","ШНҚ 2.04.05-22","ШНҚ 2.01.01-22","ҚМҚ 2.01.18-18"],ans:1,exp:"ШНҚ 2.04.05-22 — isitish, ventilatsiya va havoni kondisiyalash jihatdan loyihalash talablarini belgilaydi."},
+  {cat:"ҚМҚ & ШНҚ Normativlar",q:"Qaysi normativ hujjat bino xona maydonlarini yoritish jihatdan loyihalash talablarini belgilaydi?",opts:["ҚМҚ 2.01.04-18","ШНҚ 2.01.05-24","ШНҚ 2.01.01-22","ШНҚ 2.01.18-24"],ans:1,exp:"ШНҚ 2.01.05-24 — bino va inshootlar xona maydonlarini yoritish jihatdan loyihalash talablarini belgilaydi."},
+  {cat:"To'suvchi Konstruksiyalar",q:"To'suvchi konstruksiyalar deb nimaga aytiladi?",opts:["Bino ichki bo'linmalari","Tashqi havo harorati va namligi bilan to'g'ridan-to'g'ri ta'sirga kirishadigan konstruktiv elementlar","Faqat devorlar va tomlar","Poydevor konstruksiyalari"],ans:1,exp:"To'suvchi konstruksiyalar — tashqi havo harorati va namligi bilan to'g'ridan-to'g'ri ta'sirga kirishadigan konstruktiv elementlar."},
+  {cat:"To'suvchi Konstruksiyalar",q:"To'suvchi konstruksiyalar nimalardan iborat?",opts:["Faqat tashqi devorlar","Tashqi va ichki devorlar, pardevorlar, tomyopmalar, chordoq va qavatlar orayopmalari, pollar, derazalar, fonarlar, eshiklar, darvozalar","Faqat eshiklar va derazalar","Faqat poydevor"],ans:1,exp:"To'suvchi konstruksiyalar: devorlar, pardevorlar, tomyopmalar, chordoq, qavatlar orayopmalari, pollar, derazalar, fonarlar, eshiklar, darvozalar."},
+  {cat:"To'suvchi Konstruksiyalar",q:"Devorlarni grunt namligidan gidroizolyatsiya qilishda qanday izolyatsiyalar qo'llaniladi?",opts:["Faqat vertikal","Ichki va tashqi","Faqat ichki","Vertikal va gorizontal"],ans:3,exp:"ҚМҚ 2.01.04-18 ning 1.4 bandi: devorlarni grunt namligidan gidroizolyatsiyalash — vertikal va gorizontal."},
+  {cat:"To'suvchi Konstruksiyalar",q:"Binolarning issiqlik himoyalash darajalari nechta?",opts:["1 ta","2 ta","3 ta","4 ta"],ans:2,exp:"Binolarning issiqlik himoyalash darajalari 3 ta: I, II va III darajalar."},
+  {cat:"To'suvchi Konstruksiyalar",q:"Issiqlik tutuvchi qatlamni to'suvchi konstruksiyaning qaysi qismida joylashtirish tavsiya etiladi?",opts:["Ichkaridan","Tashqari va o'rta qismida","Faqat o'rta qismida","Faqat ichki tomondan"],ans:1,exp:"ҚМҚ 2.01.04-18 ning 1.6 bandi: issiqlik tutuvchi qatlamni tashqari va o'rta qismida joylashtirish tavsiya etiladi."},
+  {cat:"To'suvchi Konstruksiyalar",q:"Bir va ko'p qatlamli to'suvchi konstruksiyalar uchun qanday betonlar tavsiya etiladi?",opts:["Faqat temir-beton","Yachekali betonlar hamda g'ovakli to'ldirgichli betonlar","Oddiy beton","Pishiq g'isht"],ans:1,exp:"Bir va ko'p qatlamli konstruksiyalar uchun yachekali betonlar va g'ovakli to'ldirgichli betonlar tavsiya etiladi."},
+  {cat:"To'suvchi Konstruksiyalar",q:"Issiqlik izolyatsiyasi va fasad ekrani orasidagi havo qatlami o'rtacha necha mm?",opts:["30 mm","60 mm (45 mm dan kam va 80 mm dan ortiq bo'lmasligi kerak)","100 mm","20 mm"],ans:1,exp:"Havo qatlami o'rtacha 60 mm, lekin 45 mm dan kam va 80 mm dan ortiq bo'lmasligi kerak."},
+  {cat:"To'suvchi Konstruksiyalar",q:"Issiqlik izolyatsiyasi va fasad qoplamasini mustahkamlash uchun qanday materiallar?",opts:["Oddiy po'lat vintlar","Zanglamaydigan ankerlar, dupellar","Yog'och qoziqlar","Mis sim"],ans:1,exp:"Zanglamaydigan ankerlar va dupellar qo'llash tavsiya etiladi."},
+  {cat:"To'suvchi Konstruksiyalar",q:"Davlat kapital mablag'lari hisobiga qurilayotgan ijtimoiy binolar uchun qaysi issiqlik himoyasi darajasi?",opts:["I daraja","II daraja","III daraja","II va I daraja"],ans:1,exp:"Davlat kapital mablag'lari hisobiga qurilayotgan ijtimoiy binolar uchun II daraja issiqlik himoyasi."},
+  {cat:"Energiya Manbalari",q:"Qayta tiklanadigan energiya manbalari qaysilar?",opts:["Quyosh, shamol, bioёmgir, geotеrmal, to'lqin va gidro energiyalar","Quyosh, shamol, bioёmgir, neft, ko'mir va gidro","Quyosh, shamol, bioёmgir, neft, uran va gidro","Quyosh, shamol, bioёmgir, uran, ko'mir va gidro"],ans:0,exp:"Qayta tiklanadigan energiya manbalari: Quyosh, shamol, bioёmgir, geotеrmal, to'lqin va gidro energiyalar."},
+  {cat:"Energiya Manbalari",q:"Qayta tiklanmaydigan energiya manbalari qaysilar?",opts:["Quyosh, shamol, bioёmgir, geotеrmal, to'lqin va gidro","Ko'mir, neft, tabiiy gaz va uran","Tabiiy gaz, shamol, bioёmgir, neft, uran","Ko'mir, neft, tabiiy gaz, uran va gidro"],ans:1,exp:"Qayta tiklanmaydigan energiya manbalari: Ko'mir, neft, tabiiy gaz va uran."},
+  {cat:"Energiya Manbalari",q:"Energiyaning asosiy turlari qaysilar?",opts:["Mexanik, elektromagnit, elektr, kimёviy, yadroviy(atom)","Mexanik va yadroviy","Elektr","Elektromagnit"],ans:0,exp:"Energiyaning asosiy turlari: Mexanik, elektromagnit, elektr, kimёviy va yadroviy."},
+  {cat:"Energiya Manbalari",q:"Binolarning energiya tejamkorligi deb nimaga aytiladi?",opts:["Binoni yangi materiallar bilan qurish","Bino va inshootlarni dastlabki imkoniyatlarini saqlaggan holda energiya resurslarini iste'molini kamaytirish chora-tadbirlari","Energiyani ko'paytirish","Yangi energiya manbalari qurish"],ans:1,exp:"Energiya tejamkorlik — bino va inshootlarni dastlabki imkoniyatlarini saqlaggan holda energiya iste'molini kamaytirish chora-tadbirlari."},
+  {cat:"Energiya Manbalari",q:"Binolarning energiya samaradorligi deb nimaga aytiladi?",opts:["Energiya narxini kamaytirish","Sarflanadigan energiya resurslarini hisobga olgan holda bino va inshootlarni sifati, hajmi va xizmat davrini takomillashtirishga qaratilgan chora-tadbirlar majmui","Faqat quyosh energiyasidan foydalanish","Bino konstruksiyalarini almashtirish"],ans:1,exp:"Energiya samaradorligi — bino va inshootlarni takomillashtirishga qaratilgan chora-tadbirlar majmui."},
+  {cat:"Eksfiltrasiya & Infiltrasiya",q:"Binoning tuzilishi orqali tashqariga oqib chiqadigan iliq havoning harakati nima?",opts:["To'lqin energiya","Eksfiltrasiya","Infiltrasiya","Infiltrasiya yo'qolishi"],ans:1,exp:"Eksfiltrasiya — binoning tuzilishi orqali tashqariga oqib chiqadigan iliq havoning harakati."},
+  {cat:"Eksfiltrasiya & Infiltrasiya",q:"Binoning tuzilishi orqali xonaga sovuq havo kirishi nima?",opts:["To'lqin energiya","Eksfiltrasiya","Infiltrasiya","Infiltrasiya yo'qolishi"],ans:2,exp:"Infiltrasiya — binoning tuzilishi orqali xonaga sovuq havoning kirishi."},
+  {cat:"Ventilatsiya & Isitish",q:"Ventilatsiya deb nimaga aytiladi?",opts:["Xonani isitish tizimi","Xonadan zaharli moddalarni, ortiqcha issiqlik va namlikka ega havoni chiqarish hamda tashqi havoni kiritish","Faqat havo tozalash","Sovutish tizimi"],ans:1,exp:"Ventilatsiya — xonadan zaharli va boshqa moddalarni, ortiqcha issiqlik va namlikka ega havoni chiqarish hamda tashqi havoni kiritish."},
+  {cat:"Ventilatsiya & Isitish",q:"Isitish deb nimaga aytiladi?",opts:["Yilning isitish mavsumida xonaning talabdagi ichki havo haroratini ta'minlash maqsadida isitishni tashkil etish","Faqat qish oylarida gaz yoqish","Xonani sovutish","Havoni tozalash"],ans:0,exp:"Isitish — yilning isitish mavsumida xonaning talabdagi ichki havo haroratini ta'minlash maqsadida isitishni tashkil etish."},
+  {cat:"Ventilatsiya & Isitish",q:"Havoni kondisiyalash deb nimaga aytiladi?",opts:["Faqat sovutish","Xonalarda harorat, nisbiy namlik, tozalik va havo tezligini optimal darajada ushlab turish","Havo almashtirish","Namlikni oshirish"],ans:1,exp:"Havoni kondisiyalash — xonalarda harorat, namlik, tozalik va havo tezligini optimal darajada ushlab turish tizimi."},
+  {cat:"Ventilatsiya & Isitish",q:"Havo o'tadigan quvr deb nimaga aytiladi?",opts:["Suv quvuri","Havoni yetkazib berish yoki chiqarish uchun qo'llaniladigan tunel yoki quvr","Gaz quvuri","Issiqlik quvuri"],ans:1,exp:"Havo o'tadigan quvr — havoni yetkazib berish yoki chiqarish uchun qo'llaniladigan tunel yoki quvr."},
+  {cat:"Ventilatsiya & Isitish",q:"Bino xonalari ichki havoning nisbiy namligi qish davrida quruq rejim uchun (12°C gacha) necha foiz?",opts:["40 foizgacha","50 foizgacha","60 foizgacha","70 foizgacha"],ans:2,exp:"Qish davrida quruq rejim uchun 12° gacha haroratda nisbiy namlik 60 foizgacha olinishi kerak."},
+  {cat:"Ventilatsiya & Isitish",q:"Bino xonalari ichki havoning nisbiy namligi qish davrida ho'l rejim uchun (24°C dan ortiq) necha foiz?",opts:["40 foizdan ortiq","50 foizdan ortiq","60 foizdan ortiq","70 foizdan ortiq"],ans:2,exp:"Qish davrida ho'l rejim uchun 24° dan ortiq haroratda nisbiy namlik 60 foizdan ortiq."},
+  {cat:"Ventilatsiya & Isitish",q:"To'suvchi konstruksiyalar A rejimi qanday parametrlar?",opts:["Nam va ho'l","Quruq va normal","Faqat quruq","Faqat normal"],ans:1,exp:"A rejim bo'yicha quruq va normal shart-sharoitlar qo'llaniladi."},
+  {cat:"Ventilatsiya & Isitish",q:"To'suvchi konstruksiyalar B rejimi qanday parametrlar?",opts:["Quruq va normal","Nam va ho'l","Faqat nam","Faqat ho'l"],ans:1,exp:"B rejim bo'yicha nam va ho'l shart-sharoitlar qo'llaniladi."},
+  {cat:"Issiqlik Koeffitsiyentlari",q:"ҚМҚ 2.01.04-18: 2-daraja, 3 qavatdan yuqori turar-joy binolarida tashqi devorning R0tr = ? (m²·°C)/Вт",opts:["1,6","1,8","2,0","2,2"],ans:3,exp:"3 qavatdan yuqori, 2-daraja uchun tashqi devorning issiqlik uzatilish qarshiligi R0tr = 2,2 (m²·°C)/Вт."},
+  {cat:"Issiqlik Koeffitsiyentlari",q:"120-125 kg/m³ mineralvataning issiqlik o'tkazuvchanlik koeffitsienti λ = ?",opts:["0,040","0,055","0,064","0,070"],ans:2,exp:"120-125 kg/m³ mineralvata uchun issiqlik o'tkazuvchanlik λ = 0,064 Вт/(м·°C)."},
+  {cat:"Issiqlik Koeffitsiyentlari",q:"600 kg/m³ gazoblokning issiqlik o'tkazuvchanlik koeffitsienti λ = ?",opts:["0,11","0,14","0,22","0,28"],ans:2,exp:"600 kg/m³ gazooblok uchun issiqlik o'tkazuvchanlik λ = 0,22 Вт/(м·°C)."},
+  {cat:"Issiqlik Koeffitsiyentlari",q:"600 kg/m³ pishiq g'ishtning issiqlik o'tkazuvchanlik koeffitsienti λ = ?",opts:["0,40","0,50","0,60","0,70"],ans:3,exp:"600 kg/m³ pishiq g'isht uchun issiqlik o'tkazuvchanlik λ = 0,70 Вт/(м·°C)."},
+  {cat:"Issiqlik Koeffitsiyentlari",q:"Temirbetonning zichligi qanday?",opts:["2500 kg/m³","2400 kg/m³","1800 kg/m³","2000 kg/m³"],ans:0,exp:"Temir-beton zichligi 2500 kg/m³, issiqlik sig'imi c₀ = 0,84 kDj/(kg·°C)."},
+  {cat:"Issiqlik Koeffitsiyentlari",q:"To'suvchi konstruksiyalar issiqlik izolyatsiyalovchi qatlamda quruq holatdagi material λ necha bo'lishi kerak?",opts:["0,2 dan kichik","0,4 dan kichik","0,6 dan kichik","1,0 dan kichik"],ans:1,exp:"To'suvchi konstruksiyalar issiqlik izolyatsiyalovchi qatlamda quruq holatdagi material λ < 0,4 bo'lishi kerak."},
+  {cat:"Prezident Farmonlari",q:"Qayta tiklanuvchi energiyani jadallashtirish choralari to'g'risidagi Prezident qarori?",opts:["2023 yil 16 fevral ПҚ-57","2018 yil 16 fevral ПҚ-57","2022 yil 18 fevral ПҚ-57","2018 yil 23 fevral ПҚ-57"],ans:0,exp:"Qayta tiklanuvchi energiyani jadallashtirish to'g'risidagi Prezident qarori — 2023 yil 16 fevral ПҚ-57."},
+  {cat:"Prezident Farmonlari",q:"Kichik quvvatli qayta tiklanuvchi energiyani rivojlantirish bo'yicha Prezident farmoni?",opts:["2022 yil 9 sentyabr ПФ-220","2018 yil 10 sentyabr ПФ-220","2022 yil 18 sentyabr ПФ-220","2018 yil 23 sentyabr ПФ-57"],ans:0,exp:"ПФ-220 farmoni 2022 yil 9 sentyabrda qabul qilingan."},
+  {cat:"Prezident Farmonlari",q:"ПФ-220 (6-band): 2023 yil 1 yanvardan issiq suvning necha foizini quyosh qurilmalari orqali ta'minlash shart?",opts:["15 foiz","25 foiz","35 foiz","45 foiz"],ans:1,exp:"ПФ-220 6-band: 2023 yil 1 yanvardan kamida 25 foizini quyosh suv isitish qurilmalar orqali ta'minlash talab qilinadi."},
+  {cat:"Prezident Farmonlari",q:"ПК-4422 Qaror qachon qabul qilingan?",opts:["2019 yil 22 avgustda","2017 yil 23 avgustda","2018 yil 22 avgustda","2020 yil 22 avgustda"],ans:0,exp:"ПК-4422 — 2019 yil 22 avgustda, iqtisodiyot tarmoqlari energiya samaradorligini oshirish bo'yicha."},
+  {cat:"Prezident Farmonlari",q:"ПК-3238 sonli Qaror qachon qabul qilingan?",opts:["2017 yil 23 avgustda","2018 yil 23 avgustda","2019 yil 23 avgustda","2016 yil 23 avgustda"],ans:0,exp:"ПК-3238 — Zamonaviy energiya samarador texnologiyalarni joriy etish, 2017 yil 23 avgustda."},
+  {cat:"Prezident Farmonlari",q:"ПК-4422 ga ko'ra qayta tiklanuvchi energiya qurilmalarini ishlab chiqaruvchilar necha yil soliqdan ozod etiladi?",opts:["3 yil","5 yil","7 yil","10 yil"],ans:1,exp:"ПК-4422: ishlab chiqaruvchilar davlat ro'yxatidan o'tkazilgan sanadan 5 yil barcha soliqdan ozod etiladi."},
+  {cat:"Prezident Farmonlari",q:"ПК-3379 sonli Qaror qachon qabul qilingan?",opts:["2017 yil 8 noyabrda","2018 yil 8 noyabrda","2019 yil 8 noyabrda","2017 yil 8 oktabrda"],ans:0,exp:"ПК-3379 — 2017 yil 8 noyabrda, 'Energiya resurslaridan oqilona foydalanish chora-tadbirlari to'g'risida'."},
+  {cat:"Prezident Farmonlari",q:"ПФ-5963 (2020 yil 13 mart) farmoni nimaga oid?",opts:["Energiya tejash qonuni","Xalqaro qurilish normalarini adaptatsiya qilish","Yashil qurilish standarti","Qayta tiklanuvchi energiya"],ans:1,exp:"ПФ-5963 — Xalqaro qurilish normalarini O'zbekistonda adaptatsiya qilishga oid farmon."},
+  {cat:"Prezident Farmonlari",q:"ПФ-220 bo'yicha quyosh/shamol stantsiyasini o'rnatgan jismoniy shaxslar necha yil foizsiz to'lash imkoniyatiga ega?",opts:["2 yil","3 yil","5 yil","7 yil"],ans:1,exp:"ПФ-220: jismoniy shaxslar 3 yil maboyinida foizsiz bo'lib-bo'lib to'lash imkoniyatiga ega."},
+  {cat:"Energiya Tejash Qonuni",q:"O'zbekiston Respublikasining Energiyani tejash qonuni qachon qabul qilingan?",opts:["07.08.2022 O'RQ-840","07.08.2024 O'RQ-940","07.08.2020 O'RQ-740","07.08.2023 O'RQ-840"],ans:1,exp:"O'RQ-940-son Qonun 07.08.2024 yilda qabul qilingan."},
+  {cat:"Energiya Tejash Qonuni",q:"Energiyani tejash qonunining maqsadi nima?",opts:["Qurilish normalarini belgilash","Energiyani tejash, undan oqilona foydalanish va energiya samaradorligini oshirish sohasidagi munosabatlarni tartibga solish","Faqat qayta tiklanuvchi energiyani rivojlantirish","Elektr tarmoqlarini boshqarish"],ans:1,exp:"Qonunning maqsadi: energiyani tejash va samaradorligini oshirish sohasidagi munosabatlarni tartibga solish."},
+  {cat:"Energiya Tejash Qonuni",q:"Energiyani tejash qonuni nechta bob va moddadan tashkil topgan?",opts:["8 bob va 40 modda","11 bob va 55 modda","10 bob va 50 modda","12 bob va 60 modda"],ans:1,exp:"O'RQ-940-son Qonun 11 ta bob va 55 moddadan tashkil topgan."},
+  {cat:"Yashil Qurilish Standartlari",q:"LEED standarti qaysi tashkilot tomonidan boshqariladi?",opts:["BRE Global, 1990 yil","USGBC — Amerika Yashil Qurilish Kengashi, 1993 yil","DGNB, 2000 yil","ISO, 1998 yil"],ans:1,exp:"LEED standarti USGBC — Amerika Yashil Qurilish Kengashi tomonidan 1993 yildan boshlab boshqariladi."},
+  {cat:"Yashil Qurilish Standartlari",q:"BREEAM standarti qachon va qayerda ishlab chiqilgan?",opts:["1998 yil, Amerika","1990 yil, Britaniya BRE Global","2000 yil, Germaniya","1993 yil, Yevropa"],ans:1,exp:"BREEAM — 1990 yilda Britaniyaning BRE Global davlat tashkiloti tomonidan ishlab chiqilgan."},
+  {cat:"Yashil Qurilish Standartlari",q:"DGNB standarti qaysi mamlakat yashil sertifikatlash tizimi?",opts:["Amerika","Britaniya","Germaniya","Fransiya"],ans:2,exp:"DGNB — Germaniyaning yashil sertifikatlash tizimi, 2000-yillar o'rtalarida ishlab chiqilgan."},
+  {cat:"Yashil Qurilish Standartlari",q:"Energiyasamarador uylarning A++ sinfi stаndart uylarga nisbatan necha foiz kamroq energiya sarflaydi?",opts:["40 foizgacha","50 foizgacha","60 foizgacha","70 foizgacha"],ans:2,exp:"A++ sinfdagi binolar stаndart uylarga nisbatan 60 foizgacha kamroq energiya sarflaydi."},
+  {cat:"Yashil Qurilish Standartlari",q:"Energiyasamarador uylarning A+ toifasi energiyani taxminan necha foiz tejaydi?",opts:["30-40 foiz","40-50 foiz","50-60 foiz","60-70 foiz"],ans:2,exp:"A+ toifasi energiyani taxminan 50-60 foiz tejash imkonini beradi."},
+  {cat:"Yashil Qurilish Standartlari",q:"D va E sinflari binolar nima sababli bugun qurilmaydi?",opts:["Juda qimmat","Yaшaш uchun minimal qulayliklardan ajralib turishi sababli","Qonunda man etilgan","Materiallar yo'qligi sababli"],ans:1,exp:"D va E sinflari yashash uchun minimal qulayliklardan ajralib turishi sababli qurilmaydi."},
+  {cat:"Xalqaro Standartlar",q:"O'zbekiston qurilish normalarini shakllantirish 'Tayyorgarlik davri' qaysi yillar?",opts:["2017-2019","2019-2021","2022-2026","2027-2028"],ans:1,exp:"Tayyorgarlik davri — 2019-2021 yillar."},
+  {cat:"Xalqaro Standartlar",q:"O'zbekiston qurilish normalarini shakllantirish 'O'tish davri' qaysi yillar?",opts:["2019-2021","2022-2026","2027-2028","2025-2030"],ans:1,exp:"O'tish davri — 2022-2026 yillar: milliy va xalqaro normalarni birga qo'llash."},
+  {cat:"Xalqaro Standartlar",q:"O'zbekiston qurilish normalarini shakllantirish 'Yakunlovchi davr' qaysi yillar?",opts:["2022-2026","2025-2027","2027-2028","2030-2035"],ans:2,exp:"Yakunlovchi davr — 2027-2028 yillar: yagona milliy normativ baza yaratish."},
+  {cat:"Xalqaro Standartlar",q:"ПФ-5963 bo'yicha Koreya qurilish kodlari nomi?",opts:["BS","KBC (Korean Building Code)","IBC","JIS"],ans:1,exp:"Koreya qurilish kodlari — KBC (Korean Building Code)."},
+  {cat:"Xalqaro Standartlar",q:"ШНҚ 2.01.01-22 qanday ma'lumotlarni o'z ichiga oladi?",opts:["Faqat harorat","Tashqi havo harorati, sutkali amplituda, namlik, shamol, quyosh radiatsiyasi, iqlimiy zonalar","Faqat shamol","Faqat quyosh radiatsiyasi"],ans:1,exp:"ШНҚ 2.01.01-22: harorat, amplituda, namlik, shamol, quyosh radiatsiyasi, iqlimiy zonalar va boshqalar."},
+  {cat:"Xalqaro Standartlar",q:"ШНҚ 2.01.18-24 qanday binolarga tatbiq etilmaydi?",opts:["Turar-joy binolari","No'eb va eksperimental ob'ektlar, vaqtinchalik va ko'chma binolar","Sanoat korxonalari","Jamoat binolari"],ans:1,exp:"ШНҚ 2.01.18-24 no'eb, eksperimental, vaqtinchalik va ko'chma binolarga tatbiq etilmaydi."}
+];
+
+/* ═══════════════════════════════════════════════
+   STATE & LOGIC
+   ═══════════════════════════════════════════════ */
+let qs=[],cur=0,okN=0,errN=0,answered=false,tInt=null,tLeft=45,totT=0,uAns=[];
+const sh=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+function startQuiz(){
+  qs=sh([...ALL_Q]);
+  cur=0;okN=0;errN=0;uAns=[];totT=0;
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('quizArea').style.display='block';
+  document.getElementById('sO').textContent=0;
+  document.getElementById('sE').textContent=0;
+  showQ();
+}
+
+function showQ(){
+  answered=false;tLeft=45;clearInterval(tInt);
+  const q=qs[cur];
+  document.getElementById('qN').textContent=`SAVOL ${String(cur+1).padStart(2,'0')}`;
+  document.getElementById('qC').textContent=q.cat;
+  document.getElementById('qT').textContent=q.q;
+  document.getElementById('sN').textContent=cur+1;
+  document.getElementById('sL').textContent=qs.length-cur;
+  document.getElementById('pf').style.width=((cur/qs.length)*100)+'%';
+
+  const so=sh(q.opts.map((o,i)=>({t:o,i})));
+  const wrap=document.getElementById('ow');wrap.innerHTML='';
+  ['A','B','C','D'].forEach((k,i)=>{
+    const d=document.createElement('div');
+    d.className='opt';d.dataset.orig=so[i].i;
+    d.innerHTML=`<div class="okey">${k}</div><div class="otxt">${so[i].t}</div>`;
+    d.onclick=()=>pick(d,so[i].i);
+    wrap.appendChild(d);
+  });
+
+  document.getElementById('fb').style.display='none';
+  document.getElementById('bn').style.display='none';
+  // restart 3D card anim
+  const card=document.getElementById('qcard');
+  card.style.animation='none';void card.offsetWidth;
+  card.style.animation='ci .4s cubic-bezier(.175,.885,.32,1.275)';
+
+  updT();
+  tInt=setInterval(()=>{
+    tLeft--;totT++;updT();
+    if(tLeft<=10&&tLeft>0)sTick();
+    if(tLeft<=0){clearInterval(tInt);if(!answered)timeout();}
+  },1000);
+}
+
+function updT(){
+  const el=document.getElementById('timerEl');
+  el.textContent=`00:${String(tLeft).padStart(2,'0')}`;
+  el.className='timer';
+  if(tLeft<=15)el.classList.add('warn');
+  if(tLeft<=5)el.classList.add('danger');
+}
+
+function timeout(){
+  answered=true;
+  const q=qs[cur];
+  document.querySelectorAll('.opt').forEach(o=>{
+    o.classList.add('dis');
+    if(parseInt(o.dataset.orig)===q.ans)o.classList.add('showok');
+  });
+  uAns.push({qi:cur,chose:-1,a:q.ans});
+  errN++;document.getElementById('sE').textContent=errN;
+  sErr();
+  showFb(false,'⏰ Vaqt tugadi!',`To'g'ri javob: <strong>${q.opts[q.ans]}</strong><br>💡 ${q.exp}`);
+}
+
+function pick(el,origIdx){
+  if(answered)return;
+  answered=true;clearInterval(tInt);
+  const q=qs[cur];
+  document.querySelectorAll('.opt').forEach(o=>o.classList.add('dis'));
+  const ok=origIdx===q.ans;
+  el.classList.add(ok?'correct':'wrong');
+  if(!ok)document.querySelectorAll('.opt').forEach(o=>{if(parseInt(o.dataset.orig)===q.ans)o.classList.add('showok');});
+  uAns.push({qi:cur,chose:origIdx,a:q.ans});
+  if(ok){
+    okN++;document.getElementById('sO').textContent=okN;
+    sOk();
+    // 🎆 PROFESSIONAL EDGE FIREWORKS
+    setTimeout(()=>launchFireworks(5),60);
+    showFb(true,'✅ To\'g\'ri!',q.exp);
+  } else {
+    errN++;document.getElementById('sE').textContent=errN;
+    sErr();
+    showFb(false,'❌ Noto\'g\'ri!',`To'g'ri javob: <strong>${q.opts[q.ans]}</strong><br>💡 ${q.exp}`);
+  }
+}
+
+function showFb(ok,title,body){
+  const fb=document.getElementById('fb');
+  fb.className='fb '+(ok?'ok':'err');
+  fb.style.display='block';
+  document.getElementById('ft').textContent=title;
+  document.getElementById('fb2').innerHTML=body;
+  const btn=document.getElementById('bn');
+  btn.style.display='block';
+  btn.textContent=cur<qs.length-1?'KEYINGI SAVOL →':'📊 NATIJALARNI KO\'RISH →';
+}
+
+function nextQ(){
+  cur++;
+  if(cur<qs.length)showQ();
+  else showResults();
+}
+
+function showResults(){
+  clearInterval(tInt);
+  document.getElementById('quizArea').style.display='none';
+  document.getElementById('results').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  const pct=Math.round((okN/qs.length)*100);
+  setTimeout(()=>{
+    document.getElementById('arc').style.transition='stroke-dashoffset 1.6s ease';
+    document.getElementById('arc').style.strokeDashoffset=427-((pct/100)*427);
+  },400);
+
+  document.getElementById('rP').textContent=pct+'%';
+  document.getElementById('rO').textContent=okN;
+  document.getElementById('rE').textContent=errN;
+  document.getElementById('rTm').textContent=Math.round(totT)+'s';
+
+  let grade,title,sub,col;
+  if(pct>=90){grade='A+';title='🏆 AJOYIB!';sub='Ekzamanga to\'liq tayyor!';col='var(--green)';}
+  else if(pct>=75){grade='A';title='🎉 YAXSHI!';sub='Deyarli tayyor, bir oz takrorlang.';col='var(--cyan)';}
+  else if(pct>=60){grade='B';title='👍 QONIQARLI';sub='Yaxshi boshlanish, ko\'proq o\'qing.';col='var(--blue)';}
+  else if(pct>=40){grade='C';title='📚 KO\'PROQ O\'QING';sub='3 kun bor, intensiv takrorlang!';col='var(--gold)';}
+  else{grade='D';title='⚠️ DIQQAT!';sub='Materiallarni qayta o\'qing!';col='var(--red)';}
+
+  document.getElementById('rG').textContent=grade;
+  document.getElementById('rP').style.color=col;
+  document.getElementById('rT').textContent=title;
+  document.getElementById('rS').textContent=sub;
+
+  if(pct>=75){
+    for(let i=0;i<4;i++)setTimeout(()=>launchFireworks(4),i*700);
+  }
+
+  // Cat bars
+  const cats={};
+  qs.forEach((q,i)=>{
+    if(!cats[q.cat])cats[q.cat]={t:0,ok:0};cats[q.cat].t++;
+    const ua=uAns.find(a=>a.qi===i);
+    if(ua&&ua.chose===q.ans)cats[q.cat].ok++;
+  });
+  const catEl=document.getElementById('ca');catEl.innerHTML='';
+  Object.entries(cats).sort((a,b)=>(b[1].ok/b[1].t)-(a[1].ok/a[1].t)).forEach(([name,d])=>{
+    const p=Math.round((d.ok/d.t)*100);
+    const bc=p>=75?'var(--green)':p>=50?'var(--cyan)':p>=25?'var(--gold)':'var(--red)';
+    const em=p>=75?'✅':p>=50?'🟡':p>=25?'⚠️':'❌';
+    catEl.innerHTML+=`<div class="cr">
+      <div class="ct"><span style="font-weight:700;">${em} ${name}</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);">${d.ok}/${d.t} · ${p}%</span></div>
+      <div class="cb"><div class="cf" style="width:0%;background:${bc};" data-w="${p}%"></div></div>
+    </div>`;
+  });
+  setTimeout(()=>document.querySelectorAll('.cf').forEach(b=>b.style.width=b.dataset.w),500);
+
+  const wrongs=uAns.filter(a=>a.chose!==a.a);
+  if(wrongs.length>0){
+    document.getElementById('ws').style.display='block';
+    document.getElementById('brv').style.display='block';
+    const wl=document.getElementById('wl');wl.innerHTML='';
+    wrongs.forEach(ua=>{
+      const q=qs[ua.qi];
+      wl.innerHTML+=`<div class="wcard">
+        <div class="wq">${ua.qi+1}. ${q.q}</div>
+        <div class="wch">
+          <div class="wc b"><span class="cl">❌ Sizning javobingiz:</span>${ua.chose===-1?'Vaqt tugadi':q.opts[ua.chose]}</div>
+          <div class="wc g"><span class="cl">✅ To'g'ri javob:</span>${q.opts[ua.a]}</div>
+        </div>
+        <div class="we">💡 ${q.exp}</div>
+      </div>`;
+    });
+  }
+}
+
+function showReview(){
+  document.getElementById('results').style.display='none';
+  document.getElementById('reviewPage').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+
+  const wrongs=uAns.filter(a=>a.chose!==a.a);
+  const pct=Math.round((okN/qs.length)*100);
+
+  document.getElementById('rsum').innerHTML=`
+    <div class="rsc" style="border-color:rgba(239,68,68,.3)"><span class="rsval" style="color:var(--red)">${wrongs.length}</span><div class="rslb">XATO</div></div>
+    <div class="rsc" style="border-color:rgba(34,197,94,.3)"><span class="rsval" style="color:var(--green)">${okN}</span><div class="rslb">TO'G'RI</div></div>
+    <div class="rsc" style="border-color:rgba(245,158,11,.3)"><span class="rsval" style="color:var(--gold)">${pct}%</span><div class="rslb">NATIJA</div></div>`;
+
+  const cats={};
+  wrongs.forEach(ua=>{const q=qs[ua.qi];if(!cats[q.cat])cats[q.cat]={w:0,t:0};cats[q.cat].w++;});
+  qs.forEach(q=>{if(!cats[q.cat])cats[q.cat]={w:0,t:0};cats[q.cat].t++;});
+
+  const cc=document.getElementById('rcat');
+  const sorted=Object.entries(cats).filter(([,d])=>d.w>0).sort((a,b)=>b[1].w-a[1].w);
+  if(!sorted.length){
+    cc.innerHTML=`<div style="text-align:center;padding:24px;color:var(--green);font-size:15px;font-weight:700;">🎉 Hech qanday zaif mavzu yo'q!</div>`;
+  } else {
+    cc.innerHTML='';
+    sorted.forEach(([name,d])=>{
+      const ep=Math.round((d.w/d.t)*100);
+      const bc=ep>=75?'var(--red)':ep>=50?'var(--gold)':'var(--blue)';
+      const urg=ep>=75?'🔴 JUDA ZAIF':ep>=50?'🟠 ZAIF':'🟡 O\'RTA';
+      cc.innerHTML+=`<div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:5px;">
+          <span style="font-weight:700;font-size:12px;">${name} <span style="font-size:10px;color:var(--muted);">(${d.w} xato / ${d.t} savol)</span></span>
+          <span style="font-size:10px;font-weight:700;color:${bc};">${urg} · ${ep}%</span>
+        </div>
+        <div style="background:rgba(255,255,255,.05);border-radius:3px;height:5px;overflow:hidden;">
+          <div style="height:100%;width:0%;background:${bc};border-radius:3px;transition:width 1.2s ease;" data-w="${ep}%"></div>
+        </div>
+      </div>`;
+    });
+    setTimeout(()=>document.querySelectorAll('#rcat [data-w]').forEach(b=>b.style.width=b.dataset.w),300);
+  }
+
+  const uCats=[...new Set(wrongs.map(ua=>qs[ua.qi].cat))];
+  const fEl=document.getElementById('rflt');
+  fEl.innerHTML=`<button class="rfb act" onclick="filt('all',this)">Hammasi (${wrongs.length})</button>`;
+  uCats.forEach(cat=>{
+    const cnt=wrongs.filter(ua=>qs[ua.qi].cat===cat).length;
+    fEl.innerHTML+=`<button class="rfb" onclick="filt('${cat}',this)">${cat} (${cnt})</button>`;
+  });
+
+  const rl=document.getElementById('rl');rl.innerHTML='';
+  wrongs.forEach(ua=>{
+    const q=qs[ua.qi];
+    const ya=ua.chose===-1?'⏰ Vaqt tugadi':q.opts[ua.chose];
+    rl.innerHTML+=`<div class="wcard" data-cat="${q.cat}">
+      <div style="margin-bottom:8px;">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--red);background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);padding:3px 10px;border-radius:100px;">SAVOL ${ua.qi+1}</span>
+        <span style="font-size:9px;color:var(--muted);background:rgba(255,255,255,.04);padding:3px 10px;border-radius:100px;margin-left:5px;">${q.cat}</span>
+      </div>
+      <div class="wq">${q.q}</div>
+      <div class="wch">
+        <div class="wc b"><span class="cl">❌ Sizning javobingiz:</span>${ya}</div>
+        <div class="wc g"><span class="cl">✅ To'g'ri javob:</span>${q.opts[ua.a]}</div>
+      </div>
+      <div class="we">💡 <strong>Izoh:</strong> ${q.exp}</div>
+    </div>`;
+  });
+}
+
+function filt(cat,btn){
+  document.querySelectorAll('.rfb').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');
+  document.querySelectorAll('#rl .wcard').forEach(c=>c.style.display=(cat==='all'||c.dataset.cat===cat)?'block':'none');
+}
+
+function hideReview(){
+  document.getElementById('reviewPage').style.display='none';
+  document.getElementById('results').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function restartQuiz(){
+  clearInterval(tInt);
+  ['results','reviewPage'].forEach(id=>document.getElementById(id).style.display='none');
+  cur=0;okN=0;errN=0;uAns=[];totT=0;
+  document.getElementById('sO').textContent=0;
+  document.getElementById('sE').textContent=0;
+  qs=sh([...ALL_Q]);
+  document.getElementById('quizArea').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+  showQ();
+}
+</script>
+</body>
+</html>
